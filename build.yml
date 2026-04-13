@@ -1,0 +1,70 @@
+name: Build Knowledge Base.exe
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build Knowledge Base.exe
+        run: |
+          pyinstaller app.py `
+            --onefile `
+            --windowed `
+            --name "Knowledge Base" `
+            --hidden-import tkinter `
+            --hidden-import tkinter.ttk `
+            --hidden-import tkinter.scrolledtext `
+            --exclude-module matplotlib `
+            --exclude-module numpy `
+            --exclude-module pandas `
+            --exclude-module scipy `
+            --clean `
+            --noconfirm
+
+      - name: Upload Knowledge Base.exe as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Knowledge Base
+          path: dist/Knowledge Base.exe
+          retention-days: 90
+
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Knowledge Base v1.0.${{ github.run_number }}
+          files: dist/Knowledge Base.exe
+          body: |
+            ## Knowledge Base
+
+            Single executable — no install, no Python needed.
+
+            **Download `Knowledge Base.exe` and double-click. That is it.**
+
+            ### What is inside
+            - Search — instant local search across all topics + web fallback
+            - OS — Windows Server & Linux deep dives and troubleshooting
+            - Cloud — AWS, Azure, Google Cloud service browser
+            - DevOps — CI/CD, Terraform, Kubernetes, Docker, Helm, Ansible
+            - Networking — OSI, DNS, VPC, TLS, Load Balancing, Service Mesh
+            - Database — PostgreSQL, MySQL, Redis, MongoDB, tuning, HA, backup
+            - AI Agent — free, uses Claude CLI if installed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
