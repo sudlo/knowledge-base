@@ -18,8 +18,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install Dependencies
-        run: pip install pyinstaller duckduckgo-search
+      - name: Install PyInstaller
+        run: pip install pyinstaller
 
       - name: Build Knowledge Base.exe
         run: |
@@ -53,18 +53,6 @@ jobs:
           files: dist/Knowledge Base.exe
           body: |
             ## Knowledge Base
-
             Single executable — no install, no Python needed.
-
-            **Download `Knowledge Base.exe` and double-click. That is it.**
-
-            ### What is inside
-            - Search — instant local search across all topics + web fallback
-            - OS — Windows Server & Linux deep dives and troubleshooting
-            - Cloud — AWS, Azure, Google Cloud service browser
-            - DevOps — CI/CD, Terraform, Kubernetes, Docker, Helm, Ansible
-            - Networking — OSI, DNS, VPC, TLS, Load Balancing, Service Mesh
-            - Database — PostgreSQL, MySQL, Redis, MongoDB, tuning, HA, backup
-            - AI Agent — IronHide, completely free and built-in
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
