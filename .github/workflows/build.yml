@@ -18,8 +18,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install PyInstaller
-        run: pip install pyinstaller
+      - name: Install Dependencies
+        run: pip install pyinstaller duckduckgo-search
 
       - name: Build Knowledge Base.exe
         run: |
@@ -65,6 +65,6 @@ jobs:
             - DevOps — CI/CD, Terraform, Kubernetes, Docker, Helm, Ansible
             - Networking — OSI, DNS, VPC, TLS, Load Balancing, Service Mesh
             - Database — PostgreSQL, MySQL, Redis, MongoDB, tuning, HA, backup
-            - AI Agent — free, uses Claude CLI if installed
+            - AI Agent — IronHide, completely free and built-in
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

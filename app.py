@@ -3,7 +3,6 @@ from tkinter import ttk, scrolledtext
 import threading
 import webbrowser
 import urllib.parse
-import subprocess
 import sys
 import os
 
@@ -32,7 +31,7 @@ F_BODY   = ("Segoe UI", 11)
 F_SMALL  = ("Segoe UI", 10)
 F_MONO   = ("Consolas", 10)
 
-# ── Web search sources (no LinkedIn) ─────────────────────────────
+# ── Web search sources ─────────────────────────────
 def web_urls(query):
     q = urllib.parse.quote_plus(query)
     return [
@@ -1544,8 +1543,6 @@ class KnowledgeBase(tk.Tk):
             "PostgreSQL high CPU root cause",
             "Terraform remote state setup Azure",
             "Linux server OOM killer investigation",
-            "Docker container keeps restarting",
-            "AD replication failure diagnosis",
         ]
         for q in quick:
             tk.Button(chips, text=q, font=F_SMALL, fg=ACCENT2, bg=TAG,
@@ -1564,7 +1561,7 @@ class KnowledgeBase(tk.Tk):
         self._chat.tag_config("ai",      foreground=TEXT1,   font=F_MONO)
         self._chat.tag_config("system",  foreground=TEXT3,   font=F_SMALL)
         self._chat.tag_config("err",     foreground=RED,     font=F_SMALL)
-        self._append("system", "IronHide is online and ready. Type a question or pick a quick prompt above.\n\n")
+        self._append("system", "IronHide is connected via secure proxy. How can I help you today?\n\n")
 
         input_row = tk.Frame(f, bg=CARD, padx=10, pady=8)
         input_row.pack(fill=tk.X)
@@ -1579,9 +1576,6 @@ class KnowledgeBase(tk.Tk):
                                    fg="white", bg=ACCENT, bd=0, padx=14, pady=8,
                                    cursor="hand2", command=self._agent_send)
         self._send_btn.pack(fill=tk.X, pady=(0, 4))
-        tk.Button(side, text="Web search", font=F_SMALL, fg=ACCENT2, bg=TAG,
-                  bd=0, padx=12, pady=6, cursor="hand2",
-                  command=lambda: self._open_web(self._agent_input.get("1.0", tk.END).strip())).pack(fill=tk.X, pady=(0, 4))
         tk.Button(side, text="Clear", font=F_SMALL, fg=TEXT2, bg=PANEL,
                   bd=0, padx=12, pady=6, cursor="hand2",
                   command=self._agent_clear).pack(fill=tk.X)
@@ -1630,43 +1624,40 @@ class KnowledgeBase(tk.Tk):
 
     def _run_agent(self):
         try:
-            cmd = ["claude", "--print", "--no-markdown"]
-            # Build conversation as a single prompt with history
-            history_text = ""
+            # Import inside the thread so it doesn't slow down the app startup time
+            from duckduckgo_search import DDGS 
+        except ImportError:
+            self.after(0, lambda: self._append("err", "System Error: The 'duckduckgo-search' module was not packaged correctly."))
+            self.after(0, lambda: self._send_btn.config(state=tk.NORMAL, text="Send\n↵ Enter"))
+            return
+
+        try:
+            # 1. Format the prompt to act exactly like a Senior DevOps Copilot
+            history_text = (
+                "You are IronHide, a Senior DevOps Engineer and coding assistant. "
+                "Write clean, production-ready scripts (Terraform, PowerShell, Bash, Python, etc.). "
+                "Keep your explanations brief and focus heavily on providing the exact code requested.\n\n"
+            )
+            
+            # 2. Add the recent chat history so the AI remembers context
             for msg in self.agent_history[:-1]:
-                role = "User" if msg["role"] == "user" else "Assistant"
+                role = "User" if msg["role"] == "user" else "IronHide"
                 history_text += f"{role}: {msg['content']}\n\n"
+            
             last_q = self.agent_history[-1]["content"]
+            full_prompt = f"{history_text}User: {last_q}\nIronHide:"
 
-            system = (
-                "You are a Senior DevOps/Cloud/Systems Engineer. "
-                "Answer concisely with practical commands, real examples, and root-cause analysis. "
-                "For errors: diagnostic commands first, then fix. "
-                "Use plain text, no markdown formatting."
-            )
-            full_prompt = f"{system}\n\n{history_text}User: {last_q}\n\nAssistant:"
+            # 3. Connect to DuckDuckGo's free AI endpoint (No API key needed!)
+            with DDGS() as ddgs:
+                # You can use 'claude-3-haiku', 'gpt-4o-mini', or 'llama-3.1-70b'
+                answer = ddgs.chat(full_prompt, model='claude-3-haiku') 
 
-            result = subprocess.run(
-                cmd, input=full_prompt, capture_output=True, text=True, timeout=60
-            )
-            if result.returncode == 0 and result.stdout.strip():
-                answer = result.stdout.strip()
-                self.agent_history.append({"role": "assistant", "content": answer})
-                self.after(0, lambda: self._append("ai", answer))
-            else:
-                err = result.stderr.strip() or "claude CLI returned no output."
-                self.after(0, lambda: self._append("err",
-                    f"claude CLI error: {err}\n"
-                    "Make sure Claude Code is installed: https://claude.ai/download"))
-        except FileNotFoundError:
-            self.after(0, lambda: self._append("err",
-                "claude CLI not found.\n"
-                "Install Claude Code from https://claude.ai/download\n"
-                "The rest of the Knowledge Base works fully offline without it."))
-        except subprocess.TimeoutExpired:
-            self.after(0, lambda: self._append("err", "Request timed out after 60 seconds."))
+            # 4. Print the script back to the user interface
+            self.agent_history.append({"role": "assistant", "content": answer})
+            self.after(0, lambda: self._append("ai", answer))
+
         except Exception as ex:
-            self.after(0, lambda: self._append("err", f"{type(ex).__name__}: {ex}"))
+            self.after(0, lambda: self._append("err", f"Connection Error: {ex}\nCould not fetch the script. Ensure you have an active internet connection."))
         finally:
             self.after(0, lambda: self._send_btn.config(state=tk.NORMAL, text="Send\n↵ Enter"))
 
