@@ -7,24 +7,24 @@ import subprocess
 import sys
 import os
 
-# ── Palette ──────────────────────────────────────────────────────
-BG       = "#0d0f17"
-PANEL    = "#12141e"
-CARD     = "#181b28"
-INPUT    = "#1e2235"
-BORDER   = "#2a2d40"
-HOVER    = "#21243a"
-ACCENT   = "#6366f1"
-ACCENT2  = "#818cf8"
-GREEN    = "#22c55e"
-AMBER    = "#f59e0b"
-RED      = "#ef4444"
-BLUE     = "#38bdf8"
-PURPLE   = "#a78bfa"
-TEXT1    = "#f1f5f9"
-TEXT2    = "#94a3b8"
-TEXT3    = "#475569"
-TAG      = "#1e2340"
+# ── Palette (Vibrant Synthwave / Cyberpunk) ──────────────────────
+BG       = "#1A1A2E" # Deep twilight blue
+PANEL    = "#16213E" # Darker contrasting blue
+CARD     = "#0F3460" # Rich navy card
+INPUT    = "#1A1A2E" 
+BORDER   = "#E94560" # Vibrant red/pink border
+HOVER    = "#E94560" # Neon pink hover
+ACCENT   = "#00D2FC" # Neon cyan
+ACCENT2  = "#FF2A71" # Neon pink
+GREEN    = "#00FFC6" # Neon mint
+AMBER    = "#FFDE59" # Neon yellow
+RED      = "#FF3366" # Neon crimson
+BLUE     = "#00D2FC" # Neon cyan
+PURPLE   = "#B5179E" # Deep neon purple
+TEXT1    = "#FFFFFF" # Pure white
+TEXT2    = "#E0E0E0" # Off-white
+TEXT3    = "#A0A0B0" # Slate grey
+TAG      = "#430F58" # Deep purple tag
 
 F_TITLE  = ("Segoe UI", 20, "bold")
 F_HEAD   = ("Segoe UI", 12, "bold")
@@ -1153,7 +1153,7 @@ class KnowledgeBase(tk.Tk):
             ("DevOps", "devops"),
             ("Networking", "networking"),
             ("Database", "database"),
-            ("AI Agent", "agent"),
+            ("IronHide", "agent"),
         ]
         for label, key in items:
             b = tk.Button(nav, text=label, anchor="w", font=F_BODY,
@@ -1293,7 +1293,7 @@ class KnowledgeBase(tk.Tk):
         tk.Button(btn_row, text="Web search ↗", font=F_SMALL,
                   fg=ACCENT2, bg=TAG, bd=0, padx=10, pady=6, cursor="hand2",
                   command=lambda: self._open_web(title)).pack(side=tk.LEFT, padx=(0, 6))
-        tk.Button(btn_row, text="Ask AI Agent", font=F_SMALL,
+        tk.Button(btn_row, text="Ask IronHide", font=F_SMALL,
                   fg=TEXT1, bg=ACCENT, bd=0, padx=10, pady=6, cursor="hand2",
                   command=lambda: [win.destroy(), self._show("agent"),
                                    self._prefill(f"Deep dive on {title}")]).pack(side=tk.LEFT)
@@ -1509,7 +1509,7 @@ class KnowledgeBase(tk.Tk):
             tk.Button(btn_row, text="Web search ↗", font=F_SMALL, fg=TEXT2, bg=PANEL,
                       bd=0, padx=10, pady=5, cursor="hand2",
                       command=lambda t=tool_name: self._open_web(t)).pack(side=tk.LEFT, padx=(0, 6))
-            tk.Button(btn_row, text="Ask Agent", font=F_SMALL, fg=TEXT2, bg=PANEL,
+            tk.Button(btn_row, text="Ask IronHide", font=F_SMALL, fg=TEXT2, bg=PANEL,
                       bd=0, padx=10, pady=5, cursor="hand2",
                       command=lambda t=tool_name: [self._show("agent"),
                                                     self._prefill(f"Complete guide for {t}")]).pack(side=tk.LEFT)
@@ -1533,7 +1533,7 @@ class KnowledgeBase(tk.Tk):
     # ─── AI Agent section ────────────────────────────────────────
     def _build_agent(self):
         f = self._frame("agent")
-        self._hdr(f, "AI Agent", "Ask anything — errors, concepts, code, troubleshooting steps")
+        self._hdr(f, "IronHide", "Your personal assistant for errors, concepts, code, and troubleshooting steps")
 
         chips_lbl = tk.Label(f, text="Quick prompts:", font=F_SMALL, fg=TEXT3, bg=BG)
         chips_lbl.pack(anchor="w", pady=(0, 4))
@@ -1564,7 +1564,7 @@ class KnowledgeBase(tk.Tk):
         self._chat.tag_config("ai",      foreground=TEXT1,   font=F_MONO)
         self._chat.tag_config("system",  foreground=TEXT3,   font=F_SMALL)
         self._chat.tag_config("err",     foreground=RED,     font=F_SMALL)
-        self._append("system", "AI Agent ready. Type a question or pick a quick prompt above.\n\n")
+        self._append("system", "IronHide is online and ready. Type a question or pick a quick prompt above.\n\n")
 
         input_row = tk.Frame(f, bg=CARD, padx=10, pady=8)
         input_row.pack(fill=tk.X)
@@ -1592,7 +1592,7 @@ class KnowledgeBase(tk.Tk):
             self._chat.insert(tk.END, "\nYou:  ", "user")
             self._chat.insert(tk.END, text + "\n", "ai")
         elif role == "ai":
-            self._chat.insert(tk.END, "\nAgent:\n", "user")
+            self._chat.insert(tk.END, "\nIronHide:\n", "user")
             self._chat.insert(tk.END, text + "\n\n", "ai")
         elif role == "err":
             self._chat.insert(tk.END, f"\n⚠  {text}\n\n", "err")
