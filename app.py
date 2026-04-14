@@ -1299,7 +1299,7 @@ class KnowledgeBase(tk.Tk):
                                    self._prefill(f"Deep dive on {title}")]).pack(side=tk.LEFT)
 
     def _section_block(self, parent, title, items, color):
-        tk.Label(parent, text=title, font=F_HEAD, fg=color, bg=BG, pady=(10, 2)).pack(anchor="w")
+        tk.Label(parent, text=title, font=F_HEAD, fg=color, bg=BG).pack(anchor="w", pady=(10, 2))
         for item in items:
             r = tk.Frame(parent, bg=BG)
             r.pack(fill=tk.X, pady=1)
@@ -1451,7 +1451,7 @@ class KnowledgeBase(tk.Tk):
             if cat == "color":
                 continue
             tk.Label(self._cloud_content, text=cat.upper(), font=("Segoe UI", 10, "bold"),
-                     fg=TEXT3, bg=BG, pady=(8, 2)).pack(anchor="w")
+                     fg=TEXT3, bg=BG).pack(anchor="w", pady=(8, 2))
             grid = tk.Frame(self._cloud_content, bg=BG)
             grid.pack(fill=tk.X)
             for i, svc in enumerate(services):
