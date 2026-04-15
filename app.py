@@ -1212,14 +1212,13 @@ class KnowledgeBase(tk.Tk):
             try:
                 parsed = json.loads(answer_raw)
                 if isinstance(parsed, dict):
-                    if "choices" in parsed:
-                        answer = parsed["choices"][0]["message"].get("content", "")
-                    elif "content" in parsed and parsed["content"]:
-                        answer = parsed["content"]
+                    if "choices" in parsed and len(parsed["choices"]) > 0:
+                        msg = parsed["choices"][0].get("message", {})
+                        answer = msg.get("content") or msg.get("reasoning_content") or answer_raw
                     else:
-                        answer = answer_raw
+                        answer = parsed.get("content") or parsed.get("reasoning_content") or answer_raw
                 else:
-                    answer = answer_raw
+                    answer = str(parsed)
             except Exception:
                 answer = answer_raw
                 
@@ -1341,10 +1340,11 @@ class KnowledgeBase(tk.Tk):
             for msg in self.agent_history:
                 messages.append({"role": msg["role"], "content": msg["content"]})
             
+            # Using a stable, clean model identifier to avoid JSON reasoning blocks
             url = "https://text.pollinations.ai/"
             data = json.dumps({
                 "messages": messages,
-                "model": "openai"
+                "model": "gpt-4o" 
             }).encode('utf-8')
             
             headers = {
@@ -1360,15 +1360,16 @@ class KnowledgeBase(tk.Tk):
             try:
                 parsed = json.loads(answer_raw)
                 if isinstance(parsed, dict):
-                    if "choices" in parsed:
-                        answer = parsed["choices"][0]["message"].get("content", "")
-                    elif "content" in parsed and parsed["content"]:
-                        answer = parsed["content"]
+                    if "choices" in parsed and len(parsed["choices"]) > 0:
+                        msg = parsed["choices"][0].get("message", {})
+                        # Fallback correctly between content, reasoning, or raw
+                        answer = msg.get("content") or msg.get("reasoning_content") or answer_raw
                     else:
-                        answer = answer_raw
+                        answer = parsed.get("content") or parsed.get("reasoning_content") or answer_raw
                 else:
-                    answer = answer_raw
+                    answer = str(parsed)
             except Exception:
+                # If it's not JSON, it's just the clean raw text string we wanted!
                 answer = answer_raw
                 
             if not answer:
