@@ -3,6 +3,7 @@ from tkinter import ttk, scrolledtext, filedialog
 import threading
 import webbrowser
 import urllib.parse
+import urllib.request
 import sys
 import os
 import json
@@ -1158,7 +1159,6 @@ class KnowledgeBase(tk.Tk):
             padx=14, pady=12, wrap=tk.WORD, state=tk.DISABLED, insertbackground=TEXT1
         )
         self._log_output.pack(fill=tk.BOTH, expand=True)
-        # Added spacing to log output so it's readable
         self._log_output.tag_config("system", spacing1=10, spacing3=10)
 
     def _load_log_file(self):
@@ -1209,7 +1209,6 @@ class KnowledgeBase(tk.Tk):
             with urllib.request.urlopen(req, timeout=60) as response:
                 answer_raw = response.read().decode('utf-8').strip()
                 
-            # Safely parse if the API returns JSON instead of raw text
             try:
                 parsed = json.loads(answer_raw)
                 if isinstance(parsed, dict):
@@ -1267,7 +1266,6 @@ class KnowledgeBase(tk.Tk):
         )
         self._chat.pack(fill=tk.BOTH, expand=True)
         
-        # INCREASED SPACING AND MARGINS FOR PROPER ALIGNMENT
         self._chat.tag_config("user",    foreground=ACCENT2, font=("Segoe UI", 11, "bold"), spacing1=10, spacing3=5)
         self._chat.tag_config("ai",      foreground=TEXT1,   font=F_MONO, lmargin1=20, lmargin2=20, spacing3=15)
         self._chat.tag_config("system",  foreground=TEXT3,   font=F_SMALL, spacing1=10, spacing3=10)
@@ -1359,7 +1357,6 @@ class KnowledgeBase(tk.Tk):
             with urllib.request.urlopen(req, timeout=60) as response:
                 answer_raw = response.read().decode('utf-8').strip()
                 
-            # Safely parse if the API returns JSON instead of raw text
             try:
                 parsed = json.loads(answer_raw)
                 if isinstance(parsed, dict):
