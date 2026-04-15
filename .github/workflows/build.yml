@@ -30,6 +30,8 @@ jobs:
             --hidden-import tkinter `
             --hidden-import tkinter.ttk `
             --hidden-import tkinter.scrolledtext `
+            --hidden-import urllib.request `
+            --hidden-import urllib.parse `
             --exclude-module matplotlib `
             --exclude-module numpy `
             --exclude-module pandas `
@@ -54,11 +56,5 @@ jobs:
           body: |
             ## Knowledge Base (Ultimate Edition)
             Single executable - no install, no Python needed.
-            
-            **What is new in this build:**
-            - 📁 Native Log & Ticket Analyzer (Supports .log, .txt, .csv)
-            - 🏛️ Architecture & Security Deep Dives
-            - ☁️ 250+ Cloud Services with dynamic official documentation routing
-            - 🤖 IronHide AI: Formatted code generation with mandatory source links
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
