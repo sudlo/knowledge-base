@@ -7,23 +7,23 @@ import sys
 import os
 
 # -- Palette (VS Code / Tailwind Pro Dark Theme) ------------------
-BG       = "#0f172a" # Deep Slate Background
-PANEL    = "#1e293b" # Sidebar / Modals
-CARD     = "#1e293b" # Inner cards
-INPUT    = "#020617" # Dark Input boxes
-BORDER   = "#334155" # Subtle borders
-HOVER    = "#334155" # Button hover states
-ACCENT   = "#3b82f6" # Professional Primary Blue
-ACCENT2  = "#8b5cf6" # Vibrant Purple secondary
-GREEN    = "#10b981" # Emerald success
-AMBER    = "#f59e0b" # Warning amber
-RED      = "#ef4444" # Danger red
+BG       = "#0f172a" 
+PANEL    = "#1e293b" 
+CARD     = "#1e293b" 
+INPUT    = "#020617" 
+BORDER   = "#334155" 
+HOVER    = "#334155" 
+ACCENT   = "#3b82f6" 
+ACCENT2  = "#8b5cf6" 
+GREEN    = "#10b981" 
+AMBER    = "#f59e0b" 
+RED      = "#ef4444" 
 BLUE     = "#3b82f6" 
 PURPLE   = "#8b5cf6" 
-TEXT1    = "#f8fafc" # High-contrast white
-TEXT2    = "#cbd5e1" # Standard text
-TEXT3    = "#94a3b8" # Muted text
-TAG      = "#334155" # Tag background
+TEXT1    = "#f8fafc" 
+TEXT2    = "#cbd5e1" 
+TEXT3    = "#94a3b8" 
+TAG      = "#334155" 
 
 F_TITLE  = ("Segoe UI", 20, "bold")
 F_HEAD   = ("Segoe UI", 12, "bold")
@@ -827,7 +827,6 @@ class KnowledgeBase(tk.Tk):
         tk.Frame(nav, height=1, bg=BORDER).pack(fill=tk.X, padx=14)
 
         self._nav_btns = {}
-        # ADDED EMOJI GRAPHICS TO ALL NAVIGATION BUTTONS
         items = [
             ("🔍 Search", "search"),
             ("💻 OS & Virt", "os"),
@@ -1084,12 +1083,12 @@ class KnowledgeBase(tk.Tk):
     # --- LOG ANALYZER section ----------------------------------------
     def _build_logs(self):
         f = self._frame("logs")
-        self._hdr(f, "Log & Ticket Analyzer", "Upload .log files or paste error stacks for root-cause analysis.")
+        self._hdr(f, "Log & Ticket Analyzer", "Upload logs or CSV ticket dumps for root-cause and trend analysis.")
 
         input_container = tk.Frame(f, bg=CARD, padx=14, pady=14)
         input_container.pack(fill=tk.X, pady=(0, 12))
         
-        tk.Label(input_container, text="Paste raw logs, JSON dumps, or ticket details here:", font=F_SMALL, fg=TEXT2, bg=CARD).pack(anchor="w", pady=(0, 6))
+        tk.Label(input_container, text="Paste raw logs, JSON, CSV ticket dumps, or error stacks here:", font=F_SMALL, fg=TEXT2, bg=CARD).pack(anchor="w", pady=(0, 6))
         
         self._log_input = scrolledtext.ScrolledText(
             input_container, font=F_MONO, bg=INPUT, fg=TEXT1, bd=0,
@@ -1100,7 +1099,7 @@ class KnowledgeBase(tk.Tk):
         btn_row = tk.Frame(input_container, bg=CARD)
         btn_row.pack(fill=tk.X, pady=(12, 0))
         
-        tk.Button(btn_row, text="📁 Upload File (.log/.txt)", font=F_SMALL, fg=TEXT1, bg=PANEL, bd=0, padx=16, pady=10, cursor="hand2", command=self._load_log_file).pack(side=tk.LEFT, padx=(0, 10))
+        tk.Button(btn_row, text="📁 Upload File (.log/.txt/.csv)", font=F_SMALL, fg=TEXT1, bg=PANEL, bd=0, padx=16, pady=10, cursor="hand2", command=self._load_log_file).pack(side=tk.LEFT, padx=(0, 10))
         tk.Button(btn_row, text="🗑️ Clear", font=F_SMALL, fg=TEXT3, bg=CARD, bd=0, padx=16, pady=10, cursor="hand2", command=lambda: self._log_input.delete("1.0", tk.END)).pack(side=tk.LEFT)
         
         self._analyze_btn = tk.Button(btn_row, text="🔬 Analyze with IronHide", font=F_BODY, fg="white", bg=ACCENT, bd=0, padx=24, pady=10, cursor="hand2", command=self._run_log_analysis)
@@ -1121,8 +1120,8 @@ class KnowledgeBase(tk.Tk):
 
     def _load_log_file(self):
         filepath = filedialog.askopenfilename(
-            title="Select a log or text file",
-            filetypes=(("Log files", "*.log"), ("Text files", "*.txt"), ("All files", "*.*"))
+            title="Select a file",
+            filetypes=(("Log & Text", "*.log *.txt"), ("CSV Data", "*.csv"), ("All files", "*.*"))
         )
         if filepath:
             try:
@@ -1142,7 +1141,7 @@ class KnowledgeBase(tk.Tk):
         self._analyze_btn.config(state=tk.DISABLED, text="Analyzing...")
         self._log_output.config(state=tk.NORMAL)
         self._log_output.delete("1.0", tk.END)
-        self._log_output.insert(tk.END, "IronHide is scanning the logs and correlating issues...\n")
+        self._log_output.insert(tk.END, "IronHide is scanning the data and correlating issues...\n")
         self._log_output.config(state=tk.DISABLED)
         threading.Thread(target=self._process_log_request, args=(raw_log,), daemon=True).start()
 
@@ -1152,13 +1151,14 @@ class KnowledgeBase(tk.Tk):
         try:
             system_prompt = (
                 "You are IronHide, an expert Cloud Infrastructure and DevOps Specialist. "
-                "Analyze the following log snippet, error trace, or support ticket. "
-                "Format your response cleanly with these exactly headers: "
+                "Analyze the following log snippet, error trace, or CSV ticket dump. "
+                "If this is a ticket dump (CSV/text), identify common trends, frequent failing services, and recommend architectural improvements. "
+                "If this is a standard error log, format your response cleanly with these exact headers: "
                 "\n1. Root Cause Analysis\n2. Suggested Fix / Commands\n3. Preventive Measures."
             )
             messages = [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Please analyze this issue:\n\n{log_content}"}
+                {"role": "user", "content": f"Please analyze this data/issue:\n\n{log_content}"}
             ]
             url = "https://text.pollinations.ai/"
             data = json.dumps({"messages": messages, "model": "openai"}).encode('utf-8')
@@ -1182,7 +1182,7 @@ class KnowledgeBase(tk.Tk):
     # --- AI Agent section ----------------------------------------
     def _build_agent(self):
         f = self._frame("agent")
-        self._hdr(f, "IronHide", "Your personal assistant for scripts (Python, Bash, PowerShell, etc), errors, and architecture")
+        self._hdr(f, "IronHide", "Your personal assistant for scripts, errors, and architecture.")
 
         chips_lbl = tk.Label(f, text="Quick scripting prompts:", font=F_SMALL, fg=TEXT3, bg=BG)
         chips_lbl.pack(anchor="w", pady=(0, 4))
@@ -1206,7 +1206,7 @@ class KnowledgeBase(tk.Tk):
         )
         self._chat.pack(fill=tk.BOTH, expand=True)
         self._chat.tag_config("user",    foreground=ACCENT2, font=("Segoe UI", 11, "bold"))
-        self._chat.tag_config("ai",      foreground=TEXT1,   font=F_MONO)
+        self._chat.tag_config("ai",      foreground=TEXT1,   font=F_MONO, lmargin1=10, lmargin2=10) # Added left margins for alignment
         self._chat.tag_config("system",  foreground=TEXT3,   font=F_SMALL)
         self._chat.tag_config("err",     foreground=RED,     font=F_SMALL)
         
@@ -1270,16 +1270,19 @@ class KnowledgeBase(tk.Tk):
         import json
 
         try:
-            # 1. Format the prompt context
-            messages = [{
-                "role": "system", 
-                "content": "You are IronHide, a Senior DevOps Engineer and coding assistant. Write clean, production-ready scripts. You are an expert in Python, Bash, PowerShell, Terraform, Ansible, and Go. Keep explanations extremely brief. Provide exactly the code requested. If a user asks for a script without specifying the language, ask them which language they prefer before writing it, unless the context makes it obvious."
-            }]
+            system_prompt = (
+                "You are IronHide, a Senior Cloud & DevOps AI. "
+                "Write clean, production-ready code. "
+                "CRITICAL RULES: "
+                "1. Strictly format all code using proper indentation and Markdown code blocks. "
+                "2. Keep explanations extremely brief. "
+                "3. At the very end of your response, ALWAYS include a '🔗 Sources & References' section with actual URLs to official GitHub repositories, Terraform Registries, or official documentation (AWS/Azure/GCP/Microsoft) for the modules/commands used."
+            )
             
+            messages = [{"role": "system", "content": system_prompt}]
             for msg in self.agent_history:
                 messages.append({"role": msg["role"], "content": msg["content"]})
             
-            # 2. Call a free, keyless AI endpoint using standard built-in Python libraries
             url = "https://text.pollinations.ai/"
             data = json.dumps({
                 "messages": messages,
@@ -1294,7 +1297,6 @@ class KnowledgeBase(tk.Tk):
             req = urllib.request.Request(url, data=data, headers=headers, method="POST")
             
             with urllib.request.urlopen(req, timeout=45) as response:
-                # Pollinations returns the raw text directly
                 answer = response.read().decode('utf-8').strip()
             
             self.agent_history.append({"role": "assistant", "content": answer})
