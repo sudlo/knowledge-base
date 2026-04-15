@@ -5,6 +5,7 @@ import webbrowser
 import urllib.parse
 import sys
 import os
+import json
 
 # -- Palette (VS Code / Tailwind Pro Dark Theme) ------------------
 BG       = "#0f172a" 
@@ -760,7 +761,7 @@ def flatten_kb():
                         index.append({
                             "title": svc, "section": section, "parent": f"{provider} -> {cat}",
                             "text": f"{svc} {provider} {cat} cloud service", "type": "cloud_service",
-                            "provider": provider, "color": pdata["color"],
+                            "provider": provider, "cat": cat, "color": pdata["color"],
                         })
         else:
             for category, data in section_data.items():
@@ -924,6 +925,31 @@ class KnowledgeBase(tk.Tk):
             grid.columnconfigure(c, weight=1)
         tk.Button(pop, text="Close", font=F_SMALL, fg=TEXT2, bg=PANEL, bd=0, padx=20, pady=8, cursor="hand2", command=pop.destroy).pack(pady=10)
 
+    def _open_cloud_svc(self, svc, provider, cat):
+        if provider == "AWS":
+            url = f"https://docs.aws.amazon.com/search/doc-search.html?searchPath=documentation&searchQuery={urllib.parse.quote_plus(svc)}"
+        elif provider == "Azure":
+            url = f"https://learn.microsoft.com/en-us/search/?terms={urllib.parse.quote_plus('Azure ' + svc)}"
+        else:
+            url = f"https://cloud.google.com/search?q={urllib.parse.quote_plus(svc)}"
+            
+        data = {
+            "desc": f"{provider} {svc} is a {cat.lower()} service. Since architectures are highly customized, use the '⚡ Ask IronHide' button below to instantly stream a complete architectural deep-dive, Terraform code generation, or specific troubleshooting steps tailored to your environment.",
+            "concepts": [
+                f"Core architecture and primary use cases for {svc}",
+                f"Integration patterns with other {provider} services",
+                "Security, IAM policies, and compliance best practices",
+                "Pricing model considerations and cost optimization"
+            ],
+            "troubleshooting": [
+                f"Generate custom {svc} error code analysis via IronHide",
+                f"Review {provider} monitoring, logging, and performance metrics",
+                "Verify networking, VPC routing, and firewall/security group configurations"
+            ],
+            "url": url
+        }
+        self._detail_win(svc, f"{provider} > {cat}", data)
+
     def _detail_win(self, title, parent_label, data, is_devops=False):
         win = tk.Toplevel(self)
         win.title(title)
@@ -954,8 +980,13 @@ class KnowledgeBase(tk.Tk):
         
         btn_row = tk.Frame(inner, bg=BG, pady=14)
         btn_row.pack(anchor="w")
-        tk.Button(btn_row, text="🌍 Web search ↗", font=F_SMALL, fg=ACCENT2, bg=TAG, bd=0, padx=12, pady=8, cursor="hand2", command=lambda: self._open_web(title)).pack(side=tk.LEFT, padx=(0, 8))
-        tk.Button(btn_row, text="⚡ Ask IronHide", font=F_SMALL, fg=TEXT1, bg=ACCENT, bd=0, padx=12, pady=8, cursor="hand2", command=lambda: [win.destroy(), self._show("agent"), self._prefill(f"Deep dive on {title}")]).pack(side=tk.LEFT)
+        
+        if "url" in data:
+            tk.Button(btn_row, text="📘 Official Docs ↗", font=F_SMALL, fg=ACCENT2, bg=TAG, bd=0, padx=12, pady=8, cursor="hand2", command=lambda u=data["url"]: webbrowser.open(u)).pack(side=tk.LEFT, padx=(0, 8))
+        else:
+            tk.Button(btn_row, text="🌍 Web search ↗", font=F_SMALL, fg=ACCENT2, bg=TAG, bd=0, padx=12, pady=8, cursor="hand2", command=lambda: self._open_web(title)).pack(side=tk.LEFT, padx=(0, 8))
+            
+        tk.Button(btn_row, text="⚡ Ask IronHide", font=F_SMALL, fg=TEXT1, bg=ACCENT, bd=0, padx=12, pady=8, cursor="hand2", command=lambda: [win.destroy(), self._show("agent"), self._prefill(f"Give me an architectural deep dive and code examples for: {title}")]).pack(side=tk.LEFT)
 
     def _section_block(self, parent, title, items, color):
         if not items: return
@@ -998,7 +1029,17 @@ class KnowledgeBase(tk.Tk):
         row.pack(fill=tk.X, pady=3)
         tk.Label(row, text=item["title"], font=F_BODY, fg=TEXT1, bg=CARD, padx=16, pady=10, anchor="w").pack(side=tk.LEFT, fill=tk.X, expand=True)
         tk.Label(row, text=item["section"], font=F_SMALL, fg=item.get("color", TEXT2), bg=CARD, padx=12).pack(side=tk.RIGHT)
-        row.bind("<Button-1>", lambda e: self._detail_win(item["title"], item["parent"], item["data"]))
+        
+        row.bind("<Button-1>", lambda e, it=item: self._handle_search_click(it))
+        for w in row.winfo_children():
+            w.bind("<Button-1>", lambda e, it=item: self._handle_search_click(it))
+
+    def _handle_search_click(self, item):
+        if item.get("type") == "cloud_service":
+            self._open_cloud_svc(item["title"], item["provider"], item.get("cat", ""))
+        else:
+            self._detail_win(item["title"], item["parent"], item["data"])
+
 
     def _build_os(self):
         f = self._frame("os")
@@ -1057,7 +1098,7 @@ class KnowledgeBase(tk.Tk):
                 grid.columnconfigure(c, weight=1)
                 tk.Label(card, text=svc, font=F_SMALL, fg=TEXT1, bg=CARD, anchor="w", wraplength=140).pack(anchor="w")
                 for w in [card] + list(card.winfo_children()):
-                    w.bind("<Button-1>", lambda e, s=svc, p=provider: self._open_web(f"{p} {s}"))
+                    w.bind("<Button-1>", lambda e, s=svc, p=provider, ct=cat: self._open_cloud_svc(s, p, ct))
 
     def _build_devops(self):
         f = self._frame("devops")
@@ -1117,6 +1158,8 @@ class KnowledgeBase(tk.Tk):
             padx=14, pady=12, wrap=tk.WORD, state=tk.DISABLED, insertbackground=TEXT1
         )
         self._log_output.pack(fill=tk.BOTH, expand=True)
+        # Added spacing to log output so it's readable
+        self._log_output.tag_config("system", spacing1=10, spacing3=10)
 
     def _load_log_file(self):
         filepath = filedialog.askopenfilename(
@@ -1146,8 +1189,6 @@ class KnowledgeBase(tk.Tk):
         threading.Thread(target=self._process_log_request, args=(raw_log,), daemon=True).start()
 
     def _process_log_request(self, log_content):
-        import urllib.request
-        import json
         try:
             system_prompt = (
                 "You are IronHide, an expert Cloud Infrastructure and DevOps Specialist. "
@@ -1164,8 +1205,28 @@ class KnowledgeBase(tk.Tk):
             data = json.dumps({"messages": messages, "model": "openai"}).encode('utf-8')
             headers = {"Content-Type": "application/json"}
             req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+            
             with urllib.request.urlopen(req, timeout=60) as response:
-                answer = response.read().decode('utf-8').strip()
+                answer_raw = response.read().decode('utf-8').strip()
+                
+            # Safely parse if the API returns JSON instead of raw text
+            try:
+                parsed = json.loads(answer_raw)
+                if isinstance(parsed, dict):
+                    if "choices" in parsed:
+                        answer = parsed["choices"][0]["message"].get("content", "")
+                    elif "content" in parsed and parsed["content"]:
+                        answer = parsed["content"]
+                    else:
+                        answer = answer_raw
+                else:
+                    answer = answer_raw
+            except Exception:
+                answer = answer_raw
+                
+            if not answer:
+                answer = "Error: Received an empty response from the AI."
+
             self.after(0, lambda: self._update_log_output(answer))
         except Exception as ex:
             self.after(0, lambda: self._update_log_output(f"Analysis Failed: {ex}\nPlease check your internet connection or try a smaller log snippet."))
@@ -1175,14 +1236,14 @@ class KnowledgeBase(tk.Tk):
     def _update_log_output(self, text):
         self._log_output.config(state=tk.NORMAL)
         self._log_output.delete("1.0", tk.END)
-        self._log_output.insert(tk.END, text)
+        self._log_output.insert(tk.END, text, "system")
         self._log_output.config(state=tk.DISABLED)
 
 
     # --- AI Agent section ----------------------------------------
     def _build_agent(self):
         f = self._frame("agent")
-        self._hdr(f, "IronHide", "Your personal assistant for scripts (Python, Bash, PowerShell, etc), errors, and architecture")
+        self._hdr(f, "IronHide", "Your personal assistant for scripts, errors, and architecture.")
 
         chips_lbl = tk.Label(f, text="Quick scripting prompts:", font=F_SMALL, fg=TEXT3, bg=BG)
         chips_lbl.pack(anchor="w", pady=(0, 4))
@@ -1205,12 +1266,14 @@ class KnowledgeBase(tk.Tk):
             insertbackground=TEXT1, selectbackground=ACCENT, selectforeground="white"
         )
         self._chat.pack(fill=tk.BOTH, expand=True)
-        self._chat.tag_config("user",    foreground=ACCENT2, font=("Segoe UI", 11, "bold"))
-        self._chat.tag_config("ai",      foreground=TEXT1,   font=F_MONO)
-        self._chat.tag_config("system",  foreground=TEXT3,   font=F_SMALL)
-        self._chat.tag_config("err",     foreground=RED,     font=F_SMALL)
         
-        self._append("system", "IronHide is online. I can write scripts in ANY language (Python, Bash, PowerShell, Go, Terraform, etc). How can I help you today?\n\n")
+        # INCREASED SPACING AND MARGINS FOR PROPER ALIGNMENT
+        self._chat.tag_config("user",    foreground=ACCENT2, font=("Segoe UI", 11, "bold"), spacing1=10, spacing3=5)
+        self._chat.tag_config("ai",      foreground=TEXT1,   font=F_MONO, lmargin1=20, lmargin2=20, spacing3=15)
+        self._chat.tag_config("system",  foreground=TEXT3,   font=F_SMALL, spacing1=10, spacing3=10)
+        self._chat.tag_config("err",     foreground=RED,     font=F_SMALL, spacing3=10)
+        
+        self._append("system", "IronHide is online. I can write scripts in ANY language (Python, Bash, PowerShell, Go, Terraform, etc). How can I help you today?\n")
 
         input_row = tk.Frame(f, bg=CARD, padx=12, pady=10)
         input_row.pack(fill=tk.X)
@@ -1227,15 +1290,15 @@ class KnowledgeBase(tk.Tk):
     def _append(self, role, text):
         self._chat.config(state=tk.NORMAL)
         if role == "user":
-            self._chat.insert(tk.END, "\nYou:  ", "user")
+            self._chat.insert(tk.END, "You:\n", "user")
             self._chat.insert(tk.END, text + "\n", "ai")
         elif role == "ai":
-            self._chat.insert(tk.END, "\nIronHide:\n", "user")
-            self._chat.insert(tk.END, text + "\n\n", "ai")
+            self._chat.insert(tk.END, "IronHide:\n", "user")
+            self._chat.insert(tk.END, text + "\n", "ai")
         elif role == "err":
-            self._chat.insert(tk.END, f"\n⚠  {text}\n\n", "err")
+            self._chat.insert(tk.END, f"⚠  {text}\n", "err")
         else:
-            self._chat.insert(tk.END, text, "system")
+            self._chat.insert(tk.END, text + "\n", "system")
         self._chat.config(state=tk.DISABLED)
         self._chat.see(tk.END)
 
@@ -1244,7 +1307,7 @@ class KnowledgeBase(tk.Tk):
         self._chat.delete("1.0", tk.END)
         self._chat.config(state=tk.DISABLED)
         self.agent_history = []
-        self._append("system", "Chat cleared.\n\n")
+        self._append("system", "Chat cleared.\n")
 
     def _agent_enter(self, event):
         if event.state == 0:
@@ -1266,20 +1329,20 @@ class KnowledgeBase(tk.Tk):
         threading.Thread(target=self._run_agent, daemon=True).start()
 
     def _run_agent(self):
-        import urllib.request
-        import json
-
         try:
-            # 1. Format the prompt context
-            messages = [{
-                "role": "system", 
-                "content": "You are IronHide, a Senior DevOps Engineer and coding assistant. Write clean, production-ready scripts. You are an expert in Python, Bash, PowerShell, Terraform, Ansible, and Go. Keep explanations extremely brief. Provide exactly the code requested. If a user asks for a script without specifying the language, ask them which language they prefer before writing it, unless the context makes it obvious."
-            }]
+            system_prompt = (
+                "You are IronHide, a Senior Cloud & DevOps AI. "
+                "Write clean, production-ready code. "
+                "CRITICAL RULES: "
+                "1. Strictly format all code using proper indentation and Markdown code blocks. "
+                "2. Keep explanations extremely brief. "
+                "3. At the very end of your response, ALWAYS include a '🔗 Sources & References' section with actual URLs to official GitHub repositories, Terraform Registries, or official documentation (AWS/Azure/GCP/Microsoft) for the modules/commands used."
+            )
             
+            messages = [{"role": "system", "content": system_prompt}]
             for msg in self.agent_history:
                 messages.append({"role": msg["role"], "content": msg["content"]})
             
-            # 2. Call a free, keyless AI endpoint using standard built-in Python libraries
             url = "https://text.pollinations.ai/"
             data = json.dumps({
                 "messages": messages,
@@ -1293,9 +1356,26 @@ class KnowledgeBase(tk.Tk):
             
             req = urllib.request.Request(url, data=data, headers=headers, method="POST")
             
-            with urllib.request.urlopen(req, timeout=45) as response:
-                # Pollinations returns the raw text directly
-                answer = response.read().decode('utf-8').strip()
+            with urllib.request.urlopen(req, timeout=60) as response:
+                answer_raw = response.read().decode('utf-8').strip()
+                
+            # Safely parse if the API returns JSON instead of raw text
+            try:
+                parsed = json.loads(answer_raw)
+                if isinstance(parsed, dict):
+                    if "choices" in parsed:
+                        answer = parsed["choices"][0]["message"].get("content", "")
+                    elif "content" in parsed and parsed["content"]:
+                        answer = parsed["content"]
+                    else:
+                        answer = answer_raw
+                else:
+                    answer = answer_raw
+            except Exception:
+                answer = answer_raw
+                
+            if not answer:
+                answer = "Error: Received an empty response from the AI."
             
             self.agent_history.append({"role": "assistant", "content": answer})
             self.after(0, lambda: self._append("ai", answer))
