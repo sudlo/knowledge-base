@@ -1182,7 +1182,7 @@ class KnowledgeBase(tk.Tk):
     # --- AI Agent section ----------------------------------------
     def _build_agent(self):
         f = self._frame("agent")
-        self._hdr(f, "IronHide", "Your personal assistant for scripts, errors, and architecture.")
+        self._hdr(f, "IronHide", "Your personal assistant for scripts (Python, Bash, PowerShell, etc), errors, and architecture")
 
         chips_lbl = tk.Label(f, text="Quick scripting prompts:", font=F_SMALL, fg=TEXT3, bg=BG)
         chips_lbl.pack(anchor="w", pady=(0, 4))
@@ -1206,7 +1206,7 @@ class KnowledgeBase(tk.Tk):
         )
         self._chat.pack(fill=tk.BOTH, expand=True)
         self._chat.tag_config("user",    foreground=ACCENT2, font=("Segoe UI", 11, "bold"))
-        self._chat.tag_config("ai",      foreground=TEXT1,   font=F_MONO, lmargin1=10, lmargin2=10) # Added left margins for alignment
+        self._chat.tag_config("ai",      foreground=TEXT1,   font=F_MONO)
         self._chat.tag_config("system",  foreground=TEXT3,   font=F_SMALL)
         self._chat.tag_config("err",     foreground=RED,     font=F_SMALL)
         
@@ -1270,19 +1270,16 @@ class KnowledgeBase(tk.Tk):
         import json
 
         try:
-            system_prompt = (
-                "You are IronHide, a Senior Cloud & DevOps AI. "
-                "Write clean, production-ready code. "
-                "CRITICAL RULES: "
-                "1. Strictly format all code using proper indentation and Markdown code blocks. "
-                "2. Keep explanations extremely brief. "
-                "3. At the very end of your response, ALWAYS include a '🔗 Sources & References' section with actual URLs to official GitHub repositories, Terraform Registries, or official documentation (AWS/Azure/GCP/Microsoft) for the modules/commands used."
-            )
+            # 1. Format the prompt context
+            messages = [{
+                "role": "system", 
+                "content": "You are IronHide, a Senior DevOps Engineer and coding assistant. Write clean, production-ready scripts. You are an expert in Python, Bash, PowerShell, Terraform, Ansible, and Go. Keep explanations extremely brief. Provide exactly the code requested. If a user asks for a script without specifying the language, ask them which language they prefer before writing it, unless the context makes it obvious."
+            }]
             
-            messages = [{"role": "system", "content": system_prompt}]
             for msg in self.agent_history:
                 messages.append({"role": msg["role"], "content": msg["content"]})
             
+            # 2. Call a free, keyless AI endpoint using standard built-in Python libraries
             url = "https://text.pollinations.ai/"
             data = json.dumps({
                 "messages": messages,
@@ -1297,6 +1294,7 @@ class KnowledgeBase(tk.Tk):
             req = urllib.request.Request(url, data=data, headers=headers, method="POST")
             
             with urllib.request.urlopen(req, timeout=45) as response:
+                # Pollinations returns the raw text directly
                 answer = response.read().decode('utf-8').strip()
             
             self.agent_history.append({"role": "assistant", "content": answer})

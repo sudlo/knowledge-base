@@ -52,7 +52,13 @@ jobs:
           name: Knowledge Base v1.0.${{ github.run_number }}
           files: dist/Knowledge Base.exe
           body: |
-            ## Knowledge Base
+            ## Knowledge Base (Ultimate Edition)
             Single executable — no install, no Python needed.
+            
+            **What is new in this build:**
+            - 📁 Native Log & Ticket Analyzer (Supports .log, .txt, .csv)
+            - 🏛️ Architecture & Security Deep Dives
+            - ☁️ 250+ Cloud Services with dynamic official documentation routing
+            - 🤖 IronHide AI: Formatted code generation with mandatory source links
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
